@@ -7,6 +7,8 @@
 
 Un potente applicativo web enterprise progettato per assistere i commerciali dell'**industria manifatturiera e ceramica** nella generazione rapida di offerte e preventivi strutturati tramite Intelligenza Artificiale (LLM).
 
+![alt text](image.png)
+
 ## ✨ Funzionalità Principali
 
 *   **Generazione Preventivi AI:** Traduce il linguaggio naturale in una distinta base (JSON) accurata.

@@ -5,7 +5,7 @@ import LoginPage from './LoginPage'
 
 // Definizione Tipi per l'Offerta
 interface LineItem {
-  id: string;
+  id?: string;
   code: string;
   description: string;
   quantity: number;
@@ -14,10 +14,20 @@ interface LineItem {
 }
 
 interface OfferData {
+  id?: number;
+  offerCode?: string;
   customerName: string;
   projectName: string;
   items: LineItem[];
   notes: string;
+}
+
+interface HistoryItem {
+  id: number;
+  offerCode: string | null;
+  customerName: string;
+  projectName: string;
+  createdAt: string;
 }
 
 function App() {
@@ -47,9 +57,80 @@ function App() {
   const [messages, setMessages] = useState<{role: string, content: string}[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-
+  const [history, setHistory] = useState<HistoryItem[]>([])
+  
   // Stato dell'offerta corrente
   const [offer, setOffer] = useState<OfferData | null>(null)
+
+  // Fetch History on Load
+  useEffect(() => {
+      if (isAuthenticated) {
+          fetchHistory();
+      }
+  }, [isAuthenticated]);
+
+  const fetchHistory = async () => {
+      try {
+          const res = await fetch('http://localhost:8000/api/offers/history');
+          const data = await res.json();
+          setHistory(data);
+      } catch(e) {
+          console.error("Errore fetch history", e);
+      }
+  }
+
+  const loadOffer = async (id: number) => {
+      try {
+          const res = await fetch(`http://localhost:8000/api/offers/${id}`);
+          const data = await res.json();
+          setOffer(data);
+          // Aggiungiamo un messaggio per far capire all'utente
+          setMessages([{role: 'assistant', content: `Ho caricato l'offerta per il progetto "${data.projectName}".`}]);
+      } catch(e) {
+          console.error("Errore load offer", e);
+      }
+  }
+
+  const saveOffer = async () => {
+      if (!offer) return;
+      try {
+          const res = await fetch('http://localhost:8000/api/offers/', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(offer)
+          });
+          const savedData = await res.json();
+          setOffer(savedData); // Update with ID
+          fetchHistory(); // Refresh sidebar
+          alert("Offerta salvata con successo nel DB!");
+      } catch (e) {
+          alert("Errore durante il salvataggio.");
+      }
+  }
+
+  const exportCrm = async () => {
+      if (!offer || !offer.id) {
+          alert("Devi prima salvare l'offerta nel DB.");
+          return;
+      }
+      if (!offer.offerCode) {
+          alert("Devi compilare il 'Codice Offerta' per poter esportare al CRM.");
+          return;
+      }
+      try {
+          const res = await fetch(`http://localhost:8000/api/offers/${offer.id}/export`, {
+              method: 'POST'
+          });
+          const data = await res.json();
+          if (res.ok) {
+              alert(data.message);
+          } else {
+              alert("Errore: " + data.detail);
+          }
+      } catch (e) {
+          alert("Errore durante l'esportazione.");
+      }
+  }
 
   const handleSend = async () => {
     if (!input.trim()) return
@@ -164,12 +245,24 @@ function App() {
             <h1 className="text-xl font-bold text-white hidden md:block">Sales AI</h1>
         </div>
         
-        <div className="flex-1 hidden md:block">
+        <div className="flex-1 hidden md:block overflow-y-auto">
           <p className="text-xs uppercase tracking-wider text-slate-500 mb-3 font-semibold">Storico</p>
           <ul className="space-y-3 text-sm">
-            <li className="cursor-pointer hover:text-white flex items-center"><FileText size={16} className="mr-2 text-slate-500"/> Forno XYZ (USA)</li>
-            <li className="cursor-pointer hover:text-white flex items-center"><FileText size={16} className="mr-2 text-slate-500"/> Smalteria ABC</li>
-            <li className="cursor-pointer hover:text-white flex items-center"><FileText size={16} className="mr-2 text-slate-500"/> Pressa 2000T</li>
+            {history.length === 0 ? (
+                <li className="text-slate-600 italic">Nessuna offerta salvata.</li>
+            ) : (
+                history.map((h) => (
+                    <li key={h.id} onClick={() => loadOffer(h.id)} className="cursor-pointer hover:text-white flex flex-col mb-2 group">
+                        <div className="flex items-center text-slate-300 group-hover:text-white">
+                            <FileText size={16} className="mr-2 text-slate-500 group-hover:text-blue-400"/> 
+                            <span className="truncate" title={h.projectName}>{h.projectName}</span>
+                        </div>
+                        <div className="text-xs text-slate-600 ml-6 mt-1">
+                            {h.offerCode || 'Senza Codice'} - {h.customerName}
+                        </div>
+                    </li>
+                ))
+            )}
           </ul>
         </div>
 
@@ -274,11 +367,11 @@ function App() {
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-2xl font-bold text-slate-800">Distinta d'Offerta</h3>
                         <div className="flex space-x-3">
-                            <button className="flex items-center text-sm font-medium text-slate-600 bg-white border border-slate-300 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
+                            <button onClick={saveOffer} className="flex items-center text-sm font-medium text-slate-600 bg-white border border-slate-300 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
                                 <Save size={16} className="mr-2" /> Salva in SQL
                             </button>
-                            <button className="flex items-center text-sm font-medium text-white bg-green-600 px-4 py-2 rounded-lg hover:bg-green-700 transition-colors shadow-sm">
-                                <Download size={16} className="mr-2" /> Genera PDF
+                            <button onClick={exportCrm} className="flex items-center text-sm font-medium text-white bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                                <Download size={16} className="mr-2" /> Esporta per CRM
                             </button>
                         </div>
                     </div>
@@ -286,7 +379,17 @@ function App() {
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                         {/* Header Offerta */}
                         <div className="p-6 border-b border-slate-200 bg-slate-50/50">
-                            <div className="grid grid-cols-2 gap-6">
+                            <div className="grid grid-cols-3 gap-6">
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Codice Offerta</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Inserisci Codice CRM..."
+                                        value={offer.offerCode || ''}
+                                        onChange={(e) => setOffer({...offer, offerCode: e.target.value})}
+                                        className="w-full text-lg font-semibold text-slate-800 bg-white border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors px-2 py-1 shadow-sm"
+                                    />
+                                </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Cliente</label>
                                     <input 

@@ -4,15 +4,12 @@ services:
   backend:
     build:
       context: ./backend
-    ports:
-      - "8000:8000"
+    # Using host network mode so the container can reach the host's 127.0.0.1 natively
+    network_mode: "host"
     environment:
       - LLM_PROVIDER=local
-      # Using host.containers.internal to reach Ollama running on the host machine via Podman
-      - LOCAL_LLM_BASE_URL=http://host.containers.internal:11434/v1
+      - LOCAL_LLM_BASE_URL=http://127.0.0.1:11434/v1
       - LOCAL_LLM_MODEL=llama3
-    extra_hosts:
-      - "host.containers.internal:host-gateway"
     volumes:
       # Persist the sqlite DB in production
       - ./data:/app/data
@@ -23,6 +20,4 @@ services:
       context: ./frontend
     ports:
       - "80:80"
-    depends_on:
-      - backend
     restart: unless-stopped

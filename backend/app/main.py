@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.services.llm_service import generate_chat_response
 from app.db.database import engine, Base, get_db
 from app.db import models, seed
-from app.api import auth
+from app.api import auth, offers
 
 # Crea le tabelle nel DB all'avvio
 Base.metadata.create_all(bind=engine)
@@ -19,6 +19,7 @@ app = FastAPI(
 
 # Includi i router
 app.include_router(auth.router, prefix="/api", tags=["auth"])
+app.include_router(offers.router, prefix="/api/offers", tags=["offers"])
 
 # Eseguiamo il seed del DB all'avvio
 @app.on_event("startup")

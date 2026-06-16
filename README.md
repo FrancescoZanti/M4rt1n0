@@ -1,6 +1,6 @@
 # AI Sales Assistant 🤖💼 - M4rt1n0
 
-![Build Status](https://github.com/USERNAME/REPO_NAME/actions/workflows/ci.yml/badge.svg)
+![Build Status](https://github.com/FrancescoZanti/M4rt1n0/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/python-3.11-blue.svg)
 ![React](https://img.shields.io/badge/react-19-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)
@@ -72,7 +72,7 @@ L'applicazione è progettata per essere rilasciata facilmente tramite container,
 ```bash
 ./deploy-podman.sh
 ```
-Il servizio frontend sarà accessibile sulla porta `80` e il database SQLite sarà persistito nella cartella `./data`.
+Il servizio frontend sarà accessibile sulla porta `80` e il database SQLite sarà persistente nella cartella `./data`.
 
 ---
 
